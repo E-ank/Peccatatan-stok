@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stok Alat Jahit — Pencatatan Ramah Orang Tua</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  button { -webkit-tap-highlight-color: transparent; }
+  button:active { transform: scale(0.97); }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+
+<!-- ===== KEPALA HALAMAN ===== -->
+<header class="bg-blue-800 text-white px-4 pt-5 pb-4 shadow">
+  <h1 class="text-3xl md:text-4xl font-black leading-tight flex items-center gap-3">
+    <span data-ikon="spool" data-kelas="w-11 h-11 shrink-0"></span>
+    <span>Stok Alat Jahit</span>
+  </h1>
+  <p class="text-lg md:text-xl text-blue-100 mt-1">Catatan stok yang besar, jelas, dan mudah ditekan.</p>
+</header>
+
+<main class="max-w-5xl mx-auto px-3 md:px-4 pb-28">
+
+  <!-- ===== TOMBOL AKSI UTAMA ===== -->
+  <section class="grid grid-cols-2 gap-3 mt-4">
+    <button id="btnTambah" class="bg-green-600 hover:bg-green-700 text-white font-black text-xl md:text-2xl rounded-2xl py-4 px-2 shadow min-h-[76px] flex items-center justify-center gap-2">
+      <span data-ikon="plus" data-kelas="w-8 h-8"></span><span>Tambah<br class="md:hidden"> Barang</span>
+    </button>
+    <button id="btnBelanja" class="bg-orange-500 hover:bg-orange-600 text-white font-black text-xl md:text-2xl rounded-2xl py-4 px-2 shadow min-h-[76px] relative flex items-center justify-center gap-2">
+      <span data-ikon="cart" data-kelas="w-8 h-8"></span><span>Daftar<br class="md:hidden"> Belanja</span>
+      <span id="badgeBelanja" class="absolute -top-2 -right-2 bg-red-600 text-white text-xl font-black rounded-full min-w-[44px] h-[44px] px-2 hidden items-center justify-center border-4 border-white">0</span>
+    </button>
+  </section>
+  <p id="bannerBelanja" class="hidden mt-3 bg-orange-100 border-4 border-orange-500 rounded-2xl px-4 py-3 text-xl md:text-2xl font-bold text-orange-900">
+    Menampilkan barang yang <u>perlu dibeli</u> (stok menipis / habis).
+    <button id="btnKembali" class="ml-2 mt-2 md:mt-0 bg-orange-600 text-white font-black text-xl rounded-xl px-5 py-2 inline-flex items-center gap-2">
+      <span data-ikon="back" data-kelas="w-6 h-6"></span><span>Kembali</span>
+    </button>
+  </p>
+
+  <!-- ===== PENCARIAN TEKS ===== -->
+  <section class="mt-4 bg-white rounded-2xl shadow p-3">
+    <label for="inputCari" class="text-xl font-bold mb-2 flex items-center gap-2">
+      <span data-ikon="search" data-kelas="w-7 h-7"></span><span>Cari nama barang:</span>
+    </label>
+    <div class="flex gap-2">
+      <input id="inputCari" type="text" placeholder="Contoh: jarum, pink, resleting…"
+        class="flex-1 min-w-0 border-4 border-slate-300 rounded-2xl px-4 py-3 text-xl md:text-2xl focus:border-blue-600 focus:outline-none"
+        autocomplete="off">
+      <button id="btnHapusCari" class="shrink-0 bg-slate-200 hover:bg-slate-300 text-slate-900 rounded-2xl px-5 flex items-center justify-center" title="Hapus pencarian">
+        <span data-ikon="x" data-kelas="w-8 h-8"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== FILTER NOMOR KODE (TANPA KETIK HURUF) ===== -->
+  <section class="mt-3 bg-white rounded-2xl shadow p-3">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <p class="text-xl font-bold flex items-center gap-2">
+        <span data-ikon="hash" data-kelas="w-7 h-7"></span><span>Cari Kode Angka:</span>
+      </p>
+      <p class="text-xl md:text-2xl font-black bg-slate-900 text-yellow-300 rounded-xl px-4 py-1 tracking-widest">
+        <span id="labelDigit">—</span>
+      </p>
+    </div>
+    <p class="text-lg text-slate-600 mt-1">Pilih tab kategori, lalu tekan angka kodenya. Contoh: tab <b>Jarum</b> + tekan <b>1</b> → muncul <b>J-01</b>.</p>
+    <div id="keypad" class="grid grid-cols-5 gap-2 mt-3"></div>
+    <div class="grid grid-cols-2 gap-2 mt-2">
+      <button id="btnHapusDigit" class="bg-amber-400 hover:bg-amber-500 font-black text-xl rounded-2xl py-3">Hapus 1 Angka</button>
+      <button id="btnBersihDigit" class="bg-slate-200 hover:bg-slate-300 font-black text-xl rounded-2xl py-3">Bersihkan Semua</button>
+    </div>
+  </section>
+
+  <!-- ===== TAB KATEGORI (TOMBOL BESAR) ===== -->
+  <section class="sticky top-0 z-20 bg-slate-100/95 backdrop-blur py-2 -mx-1 px-1">
+    <div id="tabKategori" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+  </section>
+
+  <!-- ===== DAFTAR BARANG ===== -->
+  <section class="mt-2">
+    <p id="infoJumlah" class="text-xl font-bold text-slate-700 mb-2"></p>
+    <div id="daftarBarang" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    <div id="kosong" class="hidden bg-white rounded-2xl shadow p-8 text-center">
+      <p class="flex justify-center mb-2 text-slate-400"><span data-ikon="box" data-kelas="w-16 h-16"></span></p>
+      <p class="text-2xl font-bold">Tidak ada barang yang cocok.</p>
+      <p class="text-xl text-slate-600 mt-1">Coba ganti tab, hapus pencarian, atau tambah barang baru.</p>
+    </div>
+  </section>
+
+  <!-- ===== BACKUP DATA ===== -->
+  <section class="mt-6 bg-white rounded-2xl shadow p-4">
+    <p class="text-2xl font-black mb-1 flex items-center gap-2">
+      <span data-ikon="database" data-kelas="w-8 h-8"></span><span>Simpan / Kembalikan Data</span>
+    </p>
+    <p class="text-lg text-slate-600 mb-3">Data tersimpan otomatis di HP ini. Unduh cadangan agar tidak hilang.</p>
+    <div class="grid grid-cols-2 gap-3">
+      <button id="btnExport" class="bg-blue-700 hover:bg-blue-800 text-white font-black text-xl rounded-2xl py-4 flex items-center justify-center gap-2">
+        <span data-ikon="download" data-kelas="w-7 h-7"></span><span>Unduh<br class="md:hidden"> Cadangan</span>
+      </button>
+      <button id="btnImport" class="bg-teal-600 hover:bg-teal-700 text-white font-black text-xl rounded-2xl py-4 flex items-center justify-center gap-2">
+        <span data-ikon="upload" data-kelas="w-7 h-7"></span><span>Masukkan<br class="md:hidden"> Cadangan</span>
+      </button>
+    </div>
+    <input id="fileImport" type="file" accept=".json,application/json" class="hidden">
+    <button id="btnContoh" class="mt-3 w-full text-lg text-slate-500 underline flex items-center justify-center gap-2">
+      <span data-ikon="refresh" data-kelas="w-5 h-5"></span><span>Kembalikan data contoh</span>
+    </button>
+  </section>
+
+</main>
+
+<!-- ===== MODAL FORM TAMBAH / UBAH ===== -->
+<div id="modalForm" class="hidden fixed inset-0 z-40 bg-black/60 p-3 overflow-y-auto">
+  <div class="bg-white rounded-3xl max-w-2xl mx-auto my-4 p-4 md:p-6 shadow-2xl">
+    <h2 id="judulForm" class="text-3xl font-black mb-4 flex items-center gap-2"></h2>
+
+    <p class="text-xl font-bold mb-2">1. Pilih kategori:</p>
+    <div id="pilihKategori" class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4"></div>
+
+    <label class="block text-xl font-bold mb-2" for="fNama">2. Nama barang:</label>
+    <input id="fNama" type="text" placeholder="Contoh: Benang Jahit Extra"
+      class="w-full border-4 border-slate-300 rounded-2xl px-4 py-3 text-2xl mb-4 focus:border-blue-600 focus:outline-none" autocomplete="off">
+
+    <!-- Kode otomatis (kategori selain Benang & Kain) -->
+    <div id="boxKodeOtomatis" class="mb-4 bg-yellow-100 border-4 border-yellow-400 rounded-2xl p-3">
+      <p class="text-xl font-bold">3. Kode barang (otomatis):</p>
+      <p id="previewKode" class="text-5xl font-black tracking-wide mt-1">–</p>
+      <p class="text-lg text-slate-700 mt-1">Kode dibuat sendiri oleh aplikasi. Cocok untuk label laci.</p>
+    </div>
+
+    <!-- Kode manual (Benang & Kain) -->
+    <div id="boxKodeManual" class="hidden mb-4 bg-yellow-100 border-4 border-yellow-400 rounded-2xl p-3">
+      <p id="labelKodeManual" class="text-xl font-bold">3. Kode Warna / Nomor Pabrik:</p>
+      <input id="fKodeManual" type="text" placeholder="Contoh: Merah No. 46"
+        class="w-full mt-2 border-4 border-slate-300 rounded-2xl px-4 py-3 text-2xl bg-white focus:border-blue-600 focus:outline-none" autocomplete="off">
+      <p class="text-lg text-slate-700 mt-1">Tulis sesuai label asli Benang Extra (contoh: Merah No. 46, Pink No. 456).</p>
+    </div>
+
+    <!-- Pilihan warna (khusus Benang, nomor asli Extra) -->
+    <div id="boxWarna" class="hidden mb-4">
+      <p class="text-xl font-bold mb-2">4. Lingkaran warna benang (agar mudah dikenali):</p>
+      <div id="pilihWarna" class="flex flex-wrap gap-2"></div>
+      <p class="text-lg text-slate-600 mt-2">Nomor di bawah lingkaran adalah <b>nomor warna asli Benang Extra</b>. Menekan lingkaran ikut mengisi kolom kode bila masih kosong. Selalu cocokkan dengan label benang Anda.</p>
+      <div class="flex items-center gap-3 mt-2">
+        <span class="flex items-center gap-2 text-xl font-bold"><span data-ikon="drop" data-kelas="w-7 h-7"></span>Warna lain:</span>
+        <input id="fWarnaBebas" type="color" value="#DC2626" class="w-16 h-16 rounded-full cursor-pointer border-4 border-slate-300 p-1 bg-white">
+        <span id="namaWarna" class="text-xl font-bold"></span>
+      </div>
+    </div>
+
+    <p class="text-xl font-bold mb-2">Satuan:</p>
+    <div id="pilihSatuan" class="flex flex-wrap gap-2 mb-2"></div>
+    <input id="fSatuan" type="text"
+      class="w-full border-4 border-slate-300 rounded-2xl px-4 py-3 text-2xl mb-4 focus:border-blue-600 focus:outline-none" autocomplete="off">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div class="bg-slate-100 rounded-2xl p-3">
+        <p class="text-xl font-bold mb-2">Stok awal:</p>
+        <div class="flex items-center gap-2">
+          <button id="stokMin" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-black text-3xl rounded-2xl py-3">−</button>
+          <span id="fStok" class="flex-1 text-center text-4xl font-black">0</span>
+          <button id="stokPlus" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-black text-3xl rounded-2xl py-3">＋</button>
+        </div>
+      </div>
+      <div class="bg-slate-100 rounded-2xl p-3">
+        <p class="text-xl font-bold mb-2">Batas minimum <span class="font-normal text-lg">(peringatan habis):</span></p>
+        <div class="flex items-center gap-2">
+          <button id="minMin" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-black text-3xl rounded-2xl py-3">−</button>
+          <span id="fMin" class="flex-1 text-center text-4xl font-black">2</span>
+          <button id="minPlus" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-black text-3xl rounded-2xl py-3">＋</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <button id="btnBatal" class="bg-slate-300 hover:bg-slate-400 font-black text-2xl rounded-2xl py-4 flex items-center justify-center gap-2">
+        <span data-ikon="x" data-kelas="w-7 h-7"></span><span>Batal</span>
+      </button>
+      <button id="btnSimpan" class="bg-green-600 hover:bg-green-700 text-white font-black text-2xl rounded-2xl py-4 flex items-center justify-center gap-2">
+        <span data-ikon="save" data-kelas="w-7 h-7"></span><span>Simpan</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL KONFIRMASI ===== -->
+<div id="modalHapus" class="hidden fixed inset-0 z-50 bg-black/60 p-4">
+  <div class="bg-white rounded-3xl max-w-md mx-auto mt-24 p-6 shadow-2xl text-center">
+    <p class="flex justify-center mb-2 text-amber-500"><span data-ikon="warn" data-kelas="w-16 h-16"></span></p>
+    <p id="teksHapus" class="text-2xl font-bold mb-5">Yakin ingin menghapus?</p>
+    <div class="grid grid-cols-2 gap-3">
+      <button id="btnTidakJadi" class="bg-slate-300 hover:bg-slate-400 font-black text-2xl rounded-2xl py-4 flex items-center justify-center gap-2">
+        <span data-ikon="x" data-kelas="w-7 h-7"></span><span>Tidak</span>
+      </button>
+      <button id="btnYaHapus" class="bg-red-600 hover:bg-red-700 text-white font-black text-2xl rounded-2xl py-4 flex items-center justify-center gap-2">
+        <span data-ikon="check" data-kelas="w-7 h-7"></span><span>Ya</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PESAN SINGKAT (TOAST) ===== -->
+<div id="toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-2xl font-bold rounded-2xl px-6 py-4 shadow-2xl max-w-[92%] text-center"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
